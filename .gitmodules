@@ -1,0 +1,33 @@
+[submodule "Libs/GeminiGUI"]
+	path = Libs/GeminiGUI
+	url = https://github.com/wildstarnasa/GeminiGUI.git
+[submodule "Libs/GeminiHook"]
+	path = Libs/GeminiHook
+	url = https://github.com/wildstarnasa/GeminiHook.git
+[submodule "Libs/GeminiAddon"]
+	path = Libs/GeminiAddon
+	url = https://github.com/wildstarnasa/GeminiAddon.git
+[submodule "Libs/GeminiDB"]
+	path = Libs/GeminiDB
+	url = https://github.com/wildstarnasa/GeminiDB.git
+[submodule "Libs/GeminiLogging"]
+	path = Libs/GeminiLogging
+	url = https://github.com/wildstarnasa/GeminiLogging.git
+[submodule "Libs/LibDataChron"]
+	path = Libs/LibDataChron
+	url = https://github.com/wildstarnasa/LibDataChron.git
+[submodule "Libs/CallbackHandler"]
+	path = Libs/CallbackHandler
+	url = https://github.com/wildstarnasa/CallbackHandler.git
+[submodule "Libs/GitAddon"]
+	path = Libs/GitAddon
+	url = https://github.com/wildstarnasa/GeminiAddon.git
+[submodule "Libs/GeminiLocale"]
+	path = Libs/GeminiLocale
+	url = https://github.com/wildstarnasa/GeminiLocale.git
+[submodule "Libs/GeminiEvent"]
+	path = Libs/GeminiEvent
+	url = https://github.com/wildstarnasa/GeminiEvent.git
+[submodule "Libs/GeminiTimer"]
+	path = Libs/GeminiTimer
+	url = https://github.com/wildstarnasa/GeminiTimer.git

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Libs/CallbackHandler" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Libs/GeminiAddon" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Libs/GeminiDB" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Libs/GeminiEvent" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Libs/GeminiGUI" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Libs/GeminiLocale" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Libs/GeminiLogging" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Libs/GeminiTimer" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Libs/GitAddon" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Libs/LibDataChron" vcs="Git" />
+  </component>
+</project>
+

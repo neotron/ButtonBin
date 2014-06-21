@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Addon Author="NeoTron" APIVersion="8" Name="ButtonBin" Description="A display location for LibDataChron buttons.">
+  <Script Name="Libs/CallbackHandler/CallbackHandler-1.0.lua"/>
+  <Script Name="Libs/LibDataChron/LibDataChron-1.0.lua"/>
+  <Script Name="Libs/GeminiAddon/GeminiAddon.lua"/>
+  <Script Name="Libs/GeminiLocale/GeminiLocale.lua"/>
+  <Script Name="Libs/GeminiEvent/GeminiEvent-1.0.lua"/>
+  <Script Name="Libs/GeminiGUI/GeminiGUI.lua"/>
+  <Script Name="Libs/GeminiDB/GeminiDB-1.0.lua"/>
+  <Script Name="Libs/GeminiTimer/GeminiTimer-1.0.lua"/>
+  <Script Name="Libs/GeminiLogging/inspect.lua"/>
+  <Script Name="Libs/GeminiLogging/GeminiLogging.lua"/>
+  <Script Name="ButtonBin.lua"/>
+</Addon>
