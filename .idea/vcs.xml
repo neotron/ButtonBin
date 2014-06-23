@@ -10,7 +10,6 @@
     <mapping directory="$PROJECT_DIR$/Libs/GeminiLocale" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Libs/GeminiLogging" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Libs/GeminiTimer" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Libs/GitAddon" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Libs/LibDataChron" vcs="Git" />
   </component>
 </project>

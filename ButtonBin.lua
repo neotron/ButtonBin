@@ -1,7 +1,7 @@
 
 --[[
 **********************************************************************
-ButtonBin - A displayer for LibDataBroker compatible addons
+ButtonBin - A displayer for LibDataChron compatible addons
 **********************************************************************
 Some code from Fortress was used in this addon with permission from the
 author Borlox.
@@ -74,7 +74,7 @@ local defaults = {
       hpadding = 0.5,
       vpadding = 0.5,
       bins = {
-	 ['*'] =  {
+	 ['**'] =  {
 	    colors = {
 	       backgroundColor = { 0, 0, 0, 0.5},
 	       borderColor = { 0.88, 0.88, 0.88, 0.8 },
@@ -149,13 +149,7 @@ local function getAnchors(frame)
 end
 
 local function SetTooltipScale(tooltip, frame)
-   local bdb,sdb = mod:GetBinSettings(frame:GetParent())
-
-   local tooltipScale =
-      mod:DataBlockConfig(frame.name, "tooltipScale",
-                          sdb.tooltipScale)
-   tooltip.oldScale = tooltip:GetScale()
-   tooltip:SetScale(tooltipScale or tooltip.oldScale)
+   
 end
 
 local function PrepareTooltip(frame, anchorFrame, isGameTooltip)
@@ -172,64 +166,6 @@ local function PrepareTooltip(frame, anchorFrame, isGameTooltip)
 end
 
 local tablet
-local function LDC_OnEnter(self)
-   local obj = self.obj
-   local bin = self:GetParent()
-   local bdb = mod:GetBinSettings(bin)
-   local hideTooltip = mod:DataBlockConfig(self.name, "hideTooltip", bdb.hideTooltips)
-   if not hideTooltip then
-      if obj.tooltip then
-	 PrepareTooltip(obj.tooltip, self)
-	 obj.tooltip:Show()
-	 if obj.tooltiptext then
-	    obj.tooltip:SetText(obj.tooltiptext)
-	 end
-      elseif obj.OnTooltipShow then
-	 PrepareTooltip(GameTooltip, self, true)
-	 obj.OnTooltipShow(GameTooltip)
-	 GameTooltip:Show()
-      elseif obj.tooltiptext then
-	 PrepareTooltip(GameTooltip, self, true)
-	 GameTooltip:SetText(obj.tooltiptext)
-	 GameTooltip:Show()
-      elseif self.buttonBinText and not obj.OnEnter then
-	 PrepareTooltip(GameTooltip, self, true)
-	 GameTooltip:SetText(self.buttonBinText)
-	 GameTooltip:Show()
-	 self.hideTooltipOnLeave = true
-      end
-      if obj.OnEnter then
-	 obj.OnEnter(self)
-      end
-   end
-   self._isMouseOver = true
-   self:resizeWindow()
-   bin._isMouseOver = true
-   bin:ShowOrHide()
-end
-
-local function LDC_OnLeave(self)
-   local obj = self.obj
-   local bin = self:GetParent()
-   self._isMouseOver = nil
-   bin._isMouseOver = nil
-   bin:ShowOrHide(true)
-   self:resizeWindow()
-   if not obj then return end
-   if mod:MouseIsOver(GameTooltip) and (obj.tooltiptext or obj.OnTooltipShow)
-   then
-      return
-   end
-
-   if self.hideTooltipOnLeave or obj.tooltiptext or obj.OnTooltipShow then
-      GT_OnLeave(GameTooltip)
-      self.hideTooltipOnLeave = nil
-   end
-   if obj.OnLeave then
-      obj.OnLeave(self)
-   end
-end
-
 local function LDC_OnReceiveDrag(self, button)
    if self._ondrag then
       self._ondrag(self, button)
@@ -269,13 +205,14 @@ function ButtonBin:OnInitialize()
    self.db.RegisterCallback(self, "OnProfileCopied", "OnProfileChanged")
    self.db.RegisterCallback(self, "OnProfileReset", "OnProfileChanged")
    db = self.db.profile
-
+   
    if BB_DEBUG then
       -- Just for easy access while debugging
       bbdb = db
       bns = bins
       bf = buttonFrames
    end
+   Apollo.LoadSprites(Apollo.GetAssetFolder().."\\Sprites.xml")
 end
 
 function ButtonBin:AddNewBin()
@@ -285,11 +222,11 @@ function ButtonBin:AddNewBin()
 end
 
 do
-   local tooltip = "Button Bin %d\n"..
-      "|cffffff00Left click|r to collapse/uncollapse all other icons.\n"..
-      "|cffffff00Alt-Left click|r to toggle the button lock.\n"..
-      "|cffffff00Middle click|r to toggle the Button Bin window lock.\n"..
-      "|cffffff00Right click|r to open the Button Bin configuration.\n"
+   local tooltip = "<P>Button Bin %d<BR/></P>"..
+      "<P><T TextColor=\"ffffff00\">Left click</T> to collapse/uncollapse all other icons.<BR /></P>"..
+      "<P><T TextColor=\"ffffff00\">Alt-Left click</T> to toggle the button lock.<BR /></P>"..
+      "<P><T TextColor=\"ffffff00\">Middle click</T> to toggle the Button Bin window lock.<BR /></P>"..
+      "<P><T TextColor=\"ffffff00\">Right click</T> to open the Button Bin configuration.</P>"
    function ButtonBin:CreateBinFrame(id, bdb)
       local f = mod:GetBinFrame()
       local sdb
@@ -297,15 +234,13 @@ do
       bins[id] = f
       f.binId = id
       f:SetClampedToScreen(bdb.clampToScreen)
---      f.mover:SetClampedToScreen(bdb.clampToScreen)
       f:SetScale(sdb.scale)
       f:FixBackdrop()
-      if f.button then 
-	 f.button.db = { tooltiptext = tooltip:format(id) }
-	 f.button.obj = f.button.db
-	 f.button.name = "ButtonBin"
-	 mod:SetBinIconAndLabel(f, bdb)
-      end
+      f.button.wnd:SetTooltip(tooltip:format(id))
+      f.button.db = { tooltiptext = tooltip:format(id), bin = id }
+      f.button.obj = f.button.db
+      f.button.name = "ButtonBin"
+      mod:SetBinIconAndLabel(f, bdb)
       --      f._isMouseOver = true
       mod:SortFrames(f)
       return f
@@ -314,14 +249,16 @@ end
 
 function ButtonBin:SetBinIconAndLabel(frame, bdb)
    if bdb.binLabel then
-      frame.button.buttonBinText = bdb.binName or "Bin #"..frame.binId
+      local label = bdb.binName or "Bin #"..frame.binId
+      frame.button.plainText = label
+      frame.button.buttonBinText = "<P Font=\"CRB_Header12\">"..label.."</P>"
    else
-      frame.button.buttonBinText = nil
+      frame.button.plainText = ""
    end
-   frame.button.icon:SetTexture(bdb.binTexture)
+   frame.button.icon:SetSprite("ButtonBin_Icon")
 end
 
-function ButtonBin:LibDataBroker_DataObjectCreated(event, name, obj)
+function ButtonBin:LibDataChron_DataObjectCreated(event, name, obj)
    ldbObjects[name] = obj
    if db.enabledDataObjects[name].enabled then
       mod:EnableDataObject(name, obj)
@@ -338,49 +275,58 @@ function ButtonBin:LibDataBroker_DataObjectCreated(event, name, obj)
 end
 
 local function TextUpdater(frame, value, name, obj, delay)
-   local bdb,sdb = mod:GetBinSettings(frame:GetParent())
+   local bin = bins[frame.db.bin]
+   local bdb,sdb = mod:GetBinSettings(bin)
 
    if mod:DataBlockConfig(name, "hideLabel", bdb.hideAllText) and
       mod:DataBlockConfig(name, "hideText",  bdb.hideAllText) and
-      mod:DataBlockConfig(name, "hideValue", bdb.hideAllText) then
+   mod:DataBlockConfig(name, "hideValue", bdb.hideAllText) then
       frame.buttonBinText = nil
    else
       local showLabel = not mod:DataBlockConfig(name, "hideLabel", bdb)
       local showText  = not mod:DataBlockConfig(name, "hideText",  bdb)
       local showValue = not mod:DataBlockConfig(name, "hideValue", bdb)
-
+ 
       local labelColor = ColorToHex(bdb.colors.labelColor)
       local textColor = ColorToHex(bdb.colors.textColor)
       local unitColor = ColorToHex(bdb.colors.unitColor)
       local valueColor = ColorToHex(bdb.colors.valueColor)
 
       local text
-
+      local plaintext
       if showLabel and obj.label then  -- try to show the label
          if showValue and obj.value then
-            text = fmt("|cff%s%s:|r |cff%s%s|r|cff%s%s|r", labelColor, obj.label,
+            text = fmt("<P><T TextColor=\"ff%s\">%s:</T> <T TextColor=\"ff%s\">%s</T><T TextColor=\"ff%s\"> %s</T></P>", labelColor, obj.label,
                        valueColor, obj.value, unitColor, obj.suffix or "")
+            plaintext = fmt("%s: %s %s>", obj.label, obj.value, obj.suffix or "")
 	    
          elseif showText and obj.text and obj.text ~= obj.label then
-	    text = fmt("|cff%s%s:|r |cff%s%s|r",
+	    text = fmt("<P><T TextColor=\"%s\">%s:</T> <T TextColor=\"ff%s\">%s</T></P>",
 		       labelColor, obj.label, textColor, obj.text)
+	    plaintext = fmt("%s: %s", obj.label, obj.text)
 
          else
-            text = fmt("|cff%s%s|r", labelColor, obj.label)
+            text = fmt("<P><T TextColor=\"ff%s\">%s</T></P>", labelColor, obj.label)
+	    plaintext = obj.label
          end
       elseif showLabel and type == "launcher" then
          -- show the addonname for launchers if no label is set
          local addonName, addonTitle = GetAddOnInfo(obj.tocname or name)
-         text = fmt("|cff%s%s|r", labelColor, addonTitle or addonName or name)
+	 plaintext  = addonTitle or addonName or name
+         text = fmt("<P TextColor=\"ff%s\">%s</P>", labelColor, plaintext)
       elseif showText and obj.text then
          if showValue and obj.value then
-            text = fmt("|cff%s%s|cff%s%s|r", valueColor,
+            text = fmt("<P Font=\"CRB_Header12\"><T TextColor=\"ff%s\">%s</T><T TextColor=\"ff%s\"> %s</T></P>", valueColor,
                        obj.value, unitColor, obj.suffix or "")
+            plaintext = fmt("%s %s", obj.value, obj.suffix or "")
          else
-            text = fmt("|cff%s%s|r", textColor, obj.text)
+            text = fmt("<P Font=\"CRB_Header12\" TextColor=\"ff%s\">%s</P>", textColor, obj.text)
+            plaintext = obj.text
          end
       end
+      log:info(text)
       frame.buttonBinText = text
+      frame.plainText = plaintext
    end
    if not delay then
       local w = frame:GetWidth()
@@ -391,17 +337,19 @@ local function TextUpdater(frame, value, name, obj, delay)
       end
    end
 end
+
 local function SetTexCoord(frame, value, name, object)
-   object.texcoord = value
-   if object.texcoord then
-      frame.icon:SetTexCoord(unpack(object.texcoord))
-   end
+   --   object.texcoord = value
+   --   if object.texcoord then
+   --      frame.icon:SetTexCoord(unpack(object.texcoord))
+   --   end
 end
 
 local function SetIconColor(frame, object)
-   frame.icon:SetVertexColor(object.iconR or 1,
-                             object.iconG or 1,
-                             object.iconB or 1)
+   frame.icon:SetBGColor(ApolloColor.new(object.iconR or 1,
+					 object.iconG or 1,
+					 object.iconB or 1,
+					 1))
 end
 
 
@@ -412,53 +360,54 @@ local updaters = {
    textcoord = SetTexCoord,
    iconCoords = SetTexCoord,
    iconR = function(frame, value, name, object)
-              object.iconR = value
-              SetIconColor(frame, object)
-           end,
+      object.iconR = value
+      SetIconColor(frame, object)
+   end,
    iconG = function(frame, value, name, object)
-              object.iconG = value
-              SetIconColor(frame, object)
-           end,
+      object.iconG = value
+      SetIconColor(frame, object)
+   end,
    iconB = function(frame, value, name, object)
-              object.iconB = value
-              SetIconColor(frame, object)
-           end,
+      object.iconB = value
+      SetIconColor(frame, object)
+   end,
    icon = function(frame, value, name, object, delay)
-             frame.icon:SetTexture(value)
-             local has_texture = not not value
-             if has_texture ~= frame._has_texture then
-                frame._has_texture = has_texture
-                if not delay then
-                   if has_texture then
-                      mod:SortFrames(frame:GetParent()) -- we grew
-                   else
-                      frame:resizeWindow(true)
-                   end
-                end
-             end
-          end,
+      frame.icon:SetSprite(value)
+      local has_texture = not not value
+      if has_texture ~= frame._has_texture then
+	 frame._has_texture = has_texture
+	 if not delay then
+	    if has_texture then
+	       mod:SortFrames(frame:GetParent()) -- we grew
+	    else
+	       frame:resizeWindow(true)
+	    end
+	 end
+      end
+   end,
    OnClick = function(frame, value)
-                frame._onclick = value
-                if value then
-                   frame:SetScript("OnClick", LDC_OnClick)
-                else
-                   frame:SetScript("OnClick", nil)
-                end
-             end,
+      frame._onclick = value
+      if value then
+	 --frame:SetScript("OnClick", LDC_OnClick)
+      else
+	 --frame:SetScript("OnClick", nil)
+      end
+   end,
    OnReceiveDrag = function(frame, value)
-                frame._ondrag = value
-                if value then
-                   frame:SetScript("OnReceiveDrag", LDC_OnReceiveDrag)
-                else
-                   frame:SetScript("OnReceiveDrag", nil)
-                end
-             end,
+      frame._ondrag = value
+      if value then
+	 --frame:SetScript("OnReceiveDrag", LDC_OnReceiveDrag)
+      else
+	 --frame:SetScript("OnReceiveDrag", nil)
+      end
+   end,
    tooltiptext = function(frame, value, name, object)
-                    local tt = object.tooltip or GameTooltip
-                    if tt:GetOwner() == frame then
-                       tt:SetText(object.tooltiptext)
-                    end
-                 end,
+      if object.tooltiptext then
+	 frame.wnd:SetTooltip(object.tooltiptext)
+      else
+	 frame.wnd:SetTooltip("")
+      end
+   end,
 }
 
 function ButtonBin:AttributeChanged(event, name, key, value)
@@ -476,28 +425,31 @@ end
 function ButtonBin:EnableDataObject(name, obj)
    db.enabledDataObjects[name].enabled = true
    -- create frame for object
-   local frame = buttonFrames[name] or mod:GetFrame()
+   local frame = buttonFrames[name]
+   local binId = 1
+   local bin
+   if frame then
+      binId = frame.db.bin
+   end
+   local bin = bins[binId]
+   frame = frame or mod:GetFrame(nil, bin.left) -- TODO fix which one to use
    buttonFrames[name] = frame
    frame.db = db.enabledDataObjects[name]
    frame.name = name
    frame.obj = obj
-   if not frame.db.bin then
-      frame.db.bin = 1
-   end
-   frame:SetParent(bins[frame.db.bin])
-   frame:SetScript("OnEnter", LDC_OnEnter)
-   frame:SetScript("OnLeave", LDC_OnLeave)
-
+   frame.db.bin = binId
+   --   frame:SetScript("OnEnter", LDC_OnEnter)
+   --   frame:SetScript("OnLeave", LDC_OnLeave)
    mod:UpdateBlock(name, frame, true)
 
-   LDC.RegisterCallback(self, "LibDataBroker_AttributeChanged_"..name, "AttributeChanged")
-   mod:SortFrames(frame:GetParent())
+   mod:RegisterEvent("LibDataChron_AttributeChanged_"..name, "AttributeChanged")
+   mod:SortFrames(bin)
    mod:SetupDataBlockOptions(true)
 end
 
 function ButtonBin:DisableDataObject(name, obj)
    db.enabledDataObjects[name].enabled = false
-   LDC.UnregisterCallback(self, "LibDataBroker_AttributeChanged_"..name)
+   mod:UnregisterEvent("LibDataChron_AttributeChanged_"..name)
    if buttonFrames[name] then
       self:ReleaseFrame(buttonFrames[name])
    end
@@ -505,6 +457,9 @@ function ButtonBin:DisableDataObject(name, obj)
 end
 
 function ButtonBin:OnEnable()
+   self.bins = bins
+   self.buttonFrames = buttonFrames
+   
    log = GeminiLogging:GetLogger({
 				    level = GeminiLogging.INFO,
 				    pattern = "%d %n %c %l - %m",
@@ -513,7 +468,6 @@ function ButtonBin:OnEnable()
    if BB_DEBUG then
       log:SetLevel(GeminiLogging.DEBUG)
    end
-
 
    -- Make sure we have the default set of bins
    if not db.bins or #db.bins == 0 then
@@ -526,7 +480,7 @@ function ButtonBin:OnEnable()
    mod:SetupOptions()
 
    self:ApplyProfile()
-   LDC.RegisterCallback(self, "LibDataBroker_DataObjectCreated")
+   self:RegisterEvent("LibDataChron_DataObjectCreated")
    for _,bin in ipairs(bins) do
       self:SortFrames(bin)
    end
@@ -535,6 +489,30 @@ function ButtonBin:OnEnable()
    self:RegisterEvent("UPDATE_FLOATING_CHAT_WINDOWS","RecalculateSizes")
    self:RegisterEvent("PLAYER_REGEN_ENABLED")
    self:RegisterEvent("PLAYER_REGEN_DISABLED")
+
+
+   LDC:NewDataObject("Test1", {
+			type = "launcher",
+			text = "Test 1",
+			icon = "achievements:sprAchievements_Icon_Group",
+			label = "A label",
+			value = "12.0",
+			suffix = "fps",
+			tooltiptext = "A small tooltip.",
+			OnClick = function(clickedframe, button)
+			   log:info("button clicked")
+			end
+   })
+
+   LDC:NewDataObject("Another Test", {
+			text = "Testing", 
+			icon = "abilities:sprAbility_CapEnd3",
+			label = "Another label",
+			tooltiptext = "Hello america.",
+			OnClick = function(clickedframe, button)
+			   log:info("button 2clicked")
+			end
+   })
 end
 
 function ButtonBin:OnDisable()
@@ -634,7 +612,7 @@ function ButtonBin:ApplyProfile()
       mod:ReleaseFrame(frame)
    end
    for name, obj in LDC:DataObjectIterator() do
-      self:LibDataBroker_DataObjectCreated(nil, name, obj)
+      self:LibDataChron_DataObjectCreated(nil, name, obj)
    end
    for id,bin in ipairs(bins) do
       mod:LoadPosition(bin)
@@ -672,7 +650,6 @@ function ButtonBin:LoadPosition(bin)
    local posx = bdb.posx
    local posy = bdb.posy
 
-   log:info(posx, posy)
    if false then 
       local anchor = bdb.anchor
       bin:ClearAllPoints()
@@ -710,39 +687,26 @@ function ButtonBin:LoadDefaultBins()
       posy = 0.5,
       posx = 0,
       hidden = false,
-      binLabel = false,
-      hideBinIcon = true,
+      binLabel = true,
+      hideBinIcon = false,
       edgeSize = 0,
       moveFrames = true,
       anchor = "TOPLEFT",
       pixelwidth = Apollo.GetScreenSize(),
       width = 100,
-      clampToScreen = false
+      clampToScreen = false,
+      binName = "Button Bin"
    }
-
    for id in ipairs(db.bins) do
       if bins[id] then
 	 mod:ReleaseBinFrame(bins[id])
       end
       db.bins[id] = nil
    end
-   for id = 1, 3 do
-      local bdb = db.bins[id]
-      for key, val in pairs(defaults) do
-         bdb[key] = val
-      end
+   local bdb = db.bins[1]
+   for key, val in pairs(defaults) do
+      bdb[key] = val
    end
-
-   -- left
-   db.bins[1].binName = "Left"
-   db.bins[1].hideBinIcon = false
-   -- right
-   db.bins[2].binName = "Right"
-   db.bins[2].flipx = true
-   db.bins[2].anchor = "TOPRIGHT"
-   -- center
-   db.bins[3].binName = "Center"
-   db.bins[3].center = true
 
    for id, data in pairs(db.enabledDataObjects) do
       data.bin = 1
@@ -787,11 +751,11 @@ function ButtonBin:ToggleButtonLock()
 
    local dragButton
    if unlockButtons then dragButton = "LeftButton" end
-      if unlockButtons then
-         mod:Print("Button positions are now unlocked.")
-      else
-         mod:Print("Locking button positions.")
-      end
+   if unlockButtons then
+      mod:Print("Button positions are now unlocked.")
+   else
+      mod:Print("Locking button positions.")
+   end
    for name,frame in pairs(buttonFrames) do
       frame:RegisterForDrag(dragButton)
       frame:SetMovable(unlockButtons)
@@ -976,10 +940,10 @@ options = {
             desc = "The bin this datablock resides in.",
             width = "full",
             values = function() local val = {}
-                        for id,bdb in pairs(db.bins) do
-                           val[id]= bdb.binName
-                        end
-                        return val
+	       for id,bdb in pairs(db.bins) do
+		  val[id]= bdb.binName
+	       end
+	       return val
                      end,
          }
       }
@@ -1008,7 +972,7 @@ options = {
       type = "group",
       name = "Bin #",
       order = 4,
---      childGroups = "tab",
+      --      childGroups = "tab",
       get = "GetOption",
       set = "SetOption",
       args = {
@@ -1217,7 +1181,7 @@ options = {
             type = "group",
             name = "Look & Feel",
             args = {
-               background = {
+               background= {
                   type = 'select',
                   dialogControl = 'LSM30_Background',
                   name = 'Background texture',
@@ -1461,8 +1425,8 @@ function ButtonBin:SetDataBlockOption(info, val)
    end
    if var == "enabled" then
       if val then
-         mod:LibDataBroker_DataObjectCreated("config", name,
-                                             LDC:GetDataObjectByName(name))
+         mod:LibDataChron_DataObjectCreated("config", name,
+					    LDC:GetDataObjectByName(name))
       else
          mod:DisableDataObject(name)
       end
@@ -1507,7 +1471,8 @@ ButtonBin.binMetaTable_mt = {__index = binMetaTable }
 
 function binMetaTable:FixBackdrop()
    local bdb = db.bins[self.binId]
-
+   self.bin:SetBGColor(ApolloColor.new(unpack(bdb.colors.backgroundColor)))
+   
    if false then 
       local bgFrame = self:GetBackdrop()
       if not bgFrame then
@@ -1558,16 +1523,74 @@ local function ShowOrHideOnMouseover(self, bdb, force)
 end
 
 function binMetaTable:OnMouseEnter()
-   log:info("mouse enter")
-   self._isMouseOver = true
-   self:ShowOrHide(nil, true)
+--n   self._isMouseOver = true
+--   self:ShowOrHide(nil, true)
 end
 
 function binMetaTable:OnMouseLeave()
-   log:info("mouse exit")
-   self._isMouseOver = nil
-   self:ShowOrHide(true) 
+--   self._isMouseOver = nil
+--   self:ShowOrHide(true) 
 end
+
+function binMetaTable:LDC_OnMouseEnter()
+   local obj = self.obj
+   local bin = self:GetParent()
+   local bdb = mod:GetBinSettings(bin)
+   local hideTooltip = mod:DataBlockConfig(self.name, "hideTooltip", bdb.hideTooltips)
+   if not hideTooltip then
+      if obj.tooltip then
+	 PrepareTooltip(obj.tooltip, self)
+	 obj.tooltip:Show()
+	 if obj.tooltiptext then
+	    obj.tooltip:SetText(obj.tooltiptext)
+	 end
+      elseif obj.OnTooltipShow then
+	 PrepareTooltip(GameTooltip, self, true)
+	 obj.OnTooltipShow(GameTooltip)
+	 GameTooltip:Show()
+      elseif obj.tooltiptext then
+	 PrepareTooltip(GameTooltip, self, true)
+	 GameTooltip:SetText(obj.tooltiptext)
+	 GameTooltip:Show()
+      elseif self.buttonBinText and not obj.OnEnter then
+	 PrepareTooltip(GameTooltip, self, true)
+	 GameTooltip:SetText(self.buttonBinText)
+	 GameTooltip:Show()
+	 self.hideTooltipOnLeave = true
+      end
+      if obj.OnEnter then
+	 obj.OnEnter(self)
+      end
+   end
+   self._isMouseOver = true
+   self:resizeWindow()
+   bin._isMouseOver = true
+   bin:ShowOrHide()
+end
+
+function binMetaTable:LDC_OnMouseLeave()
+   local obj = self.obj
+   local bin = self:GetParent()
+   self._isMouseOver = nil
+   bin._isMouseOver = nil
+   bin:ShowOrHide(true)
+   self:resizeWindow()
+   if not obj then return end
+   if mod:MouseIsOver(GameTooltip) and (obj.tooltiptext or obj.OnTooltipShow)
+   then
+      return
+   end
+
+   if self.hideTooltipOnLeave or obj.tooltiptext or obj.OnTooltipShow then
+      GT_OnLeave(GameTooltip)
+      self.hideTooltipOnLeave = nil
+   end
+   if obj.OnLeave then
+      obj.OnLeave(self)
+   end
+end
+
+
 
 function binMetaTable:ShowOrHide(timer, onenter)
    local bdb = db.bins[self.binId]
@@ -1617,7 +1640,7 @@ function binMetaTable:ShowOrHide(timer, onenter)
    if onenter and self:IsVisible() and self:GetAlpha() > 0 then
       mod:SortFrames(self)
    end
---   mod:LoadPosition(self) -- this will make sure hiding / showing works as expected
+   --   mod:LoadPosition(self) -- this will make sure hiding / showing works as expected
    binTimers[self.binId] = nil
 end
 
@@ -1753,7 +1776,9 @@ end
 
 -- Proxy/compatibility methods
 function binMetaTable:Show()
-   self.bin:Show(true)
+   if not self.bin:IsVisible() then
+      self.bin:Show(true)
+   end
 end
 
 function binMetaTable:Hide()
@@ -1783,7 +1808,7 @@ end
 
 function binMetaTable:SetHeight(height)
    left, top, right, bottom = self.bin:GetAnchorOffsets()
-   self.bin:SetAnchorOffsets(left, top, right, bottom + height)
+   self.bin:SetAnchorOffsets(left, top, right, top + (height or 30))
 end
 
 function binMetaTable:GetHeight()
@@ -1811,7 +1836,7 @@ function ButtonBin:SetupBinOptions(reload)
       options.bins.args[tostring(id)] = bin
    end
    if reload then
-      R:NotifyChange("Button Bin: Bins")
+      if R then R:NotifyChange("Button Bin: Bins") end
    else
       mod.binopts = mod:OptReg(": Bins", options.bins, "Bins")
    end
@@ -1897,7 +1922,7 @@ function ButtonBin:SetupDataBlockOptions(reload)
    end
 
    if reload then
-      R:NotifyChange("Button Bin: Datablock Configuration")
+      if R then R:NotifyChange("Button Bin: Datablock Configuration") end
    else
       mod:OptReg(": Datablock Config", options.objconfig, "Datablock Configuration")
    end
@@ -1912,7 +1937,7 @@ function ButtonBin:SetupOptions()
       mod.profile = mod:OptReg(": Profiles", options.profile, "Profiles")
       mod:OptReg("Button Bin CmdLine", options.cmdline, nil,  { "buttonbin", "bin" })
    end
-      
+   
 end
 
 function ButtonBin:ToggleConfigDialog(frame)
@@ -1952,21 +1977,29 @@ function ButtonBin:SortFrames(bin)
    and not (unlockButtons or unlockFrames) then
       for id,name in pairs(sorted) do
          if buttonFrames[name] then
-            buttonFrames[name]:Hide()
+            buttonFrames[name]:Show(false)
          end
       end
       sorted = {}
    end
-
    if sdb.scale ~= bin:GetScale() then
       bin:SetScale(sdb.scale)
    end
+   bin:SetWidth(bdb.pixelWidth or sdb.pixelWidth or Apollo.GetScreenSize())
+   bin:SetHeight(sdb.size + (sdb.vpadding or 0))
 
+   bin:ShowOrHide()
+   bin.left:ArrangeChildrenHorz(0)
+   bin.center:ArrangeChildrenHorz(1)
+   bin.right:ArrangeChildrenHorz(2)
+end
+
+function ButtonBin:OldSortFramesCont()      
    local count = 1
    local previousFrame
 
    local anchor, xmulti, ymulti, otheranchor
-
+   
    if bdb.flipy then ymulti = 1 anchor = "BOTTOM" otheranchor = "BOTTOM"
    else ymulti = -1 anchor = "TOP" otheranchor = "TOP" end
 
@@ -1987,7 +2020,7 @@ function ButtonBin:SortFrames(bin)
    local hpadding = (sdb.hpadding or 0)
    local vpadding = (sdb.size + (sdb.vpadding or 0))
    local frameAlign = {}
-   if not bdb.hideBinIcon and bin.button then
+   if not bdb.hideBinIcon then
       previousFrame = bin.button
       previousFrame:resizeWindow()
       previousFrame:ClearAllPoints()
@@ -2067,8 +2100,8 @@ function ButtonBin:SortFrames(bin)
    end
    bin:SetWidth(width + inset)
    bin:SetHeight(height + inset)
---   bin.mover:SetWidth(bin:GetWidth())
---   bin.mover:SetHeight(bin:GetHeight())
+   --   bin.mover:SetWidth(bin:GetWidth())
+   --   bin.mover:SetHeight(bin:GetHeight())
    bin:ShowOrHide()
 end
 
@@ -2189,50 +2222,52 @@ do
    end
 
    local function Frame_ResizeWindow(self, dontShow)
-      local parent = self:GetParent()
+      local parent = bins[self.db.bin]
       local bdb,sdb,dbs = mod:GetBinSettings(parent)
       local iconWidth, width
       local hideIcon = mod:DataBlockConfig(self.name, "hideIcon", bdb.hideIcons)
-      local showLabel = not not self.buttonBinText
-      if parent:GetAlpha() < 1.0 then
+      local label = self.buttonBinText or self.plainText
+      local showLabel = label ~= ""
+      if parent.bin:GetOpacity() < 1.0 then
          self.label:Hide()
          return
       end
-      self.icon:ClearAllPoints()
-      self.label:ClearAllPoints()
 
-      if self.name ~= "ButtonBin" and hideIcon and showLabel
-         and not bdb.labelOnMouse then
-         self.icon:Hide();
+      local iconPoints = {}
+      local textPoints  = {}
+      if self.name ~= "ButtonBin" and hideIcon and showLabel  and not bdb.labelOnMouse then
+	 self.icon:Show(false)
          iconWidth = 0
-         self.icon:SetWidth(0)
-         self.icon:SetHeight(0)
-         self.label:SetPoint("RIGHT", self)
       else
-         iconWidth = sdb.size
-         self.icon:Show();
-         if bdb.flipicons then
-            self.icon:SetPoint("RIGHT", self)
-            self.label:SetPoint("RIGHT", self.icon, "LEFT", -2, 0)
-         else
-            self.icon:SetPoint("LEFT", self)
-            self.label:SetPoint("LEFT", self.icon, "RIGHT", 2, 0)
-         end
-         self.icon:SetWidth(sdb.size)
-         self.icon:SetHeight(sdb.size)
+         iconWidth = sdb.size+2
+         self.icon:Show(true);
+--         if bdb.flipicons then
+--            self.icon:SetPoint("RIGHT", self)
+--            self.label:SetPoint("RIGHT", self.icon, "LEFT", -2, 0)
+--         else
+--            self.icon:SetPoint("LEFT", self)
+--            self.label:SetPoint(L"EFT", self.icon, "RIGHT", 2, 0)
+--         end
+	 self.icon:SetAnchorOffsets(2, 0, sdb.size+2, sdb.size)
       end
 
-      if not dontShow then self:Show() end
+      if not dontShow then self.wnd:Show(true) end
 
       if showLabel and (not bdb.labelOnMouse or self._isMouseOver) then
          if bdb.font and bdb.fontsize then
-            self.label:SetFont(media:Fetch("font", bdb.font), bdb.fontsize)
+--            self.label:SetFont(media:Fetch("font", bdb.font), bdb.fontsize)
          end
-         self.label:SetText(self.buttonBinText)
-         width = self.label:GetStringWidth()
+	 if self.buttonBinText then
+	    self.label:SetAML(self.buttonBinText)
+	 else
+	    self.label:SetText(self.plainText)
+	 end
+
+	 log:info("Setting text to  "..label)
+	 width = Apollo.GetTextWidth(self.label:GetData(), self.plainText or self.label:GetText())
+	 log:info("Setting text to  "..label.." with width "..width)
          if width > 0 then
-            self.label:SetWidth(width)
-            self.label:Show()
+            self.label:Show(true)
             if iconWidth > 0 then
                width = width + iconWidth + 6
             else
@@ -2241,38 +2276,37 @@ do
          else
             width = iconWidth
          end
+	 self.label:SetAnchorOffsets(iconWidth+3, 0, iconWidth+width, sdb.size)
       else
          self.label:SetText("")
-         self.label:Hide()
+         self.label:Show(false)
          width = iconWidth
       end
       if bdb.labelOnMouse and showLabel then
-         local oldWidth = self:GetWidth(self)
-         if oldWidth > 0 and  oldWidth ~= width then
-            local bin = parent
-            bin:SetWidth(bin:GetWidth() - oldWidth + width)
-         end
+--         local oldWidth = self.:GetWidth(self)
+--         if oldWidth > 0 and  oldWidth ~= width then
+--            parent:SetWidth(parent:GetWidth() - oldWidth + width)
+--         end
       end
-      self:SetWidth(width)
-      self:SetHeight(sdb.size)
+      log:info("Total width ended up at "..width)
+      self.wnd:SetAnchorOffsets(0, 0, width+2, sdb.size)
    end
 
-   function ButtonBin:GetFrame()
-      local frame
-      if #unusedFrames > 0 then
-         frame = unusedFrames[#unusedFrames]
-         unusedFrames[#unusedFrames] = nil
-      else
-         frame = CreateFrame("Button", "ButtonBinBlock"..numBlocks)
-         frame:EnableMouse(true)
-         frame:RegisterForClicks("AnyUp")
-         frame.icon = frame:CreateTexture()
-         frame.label = frame:CreateFontString(nil, nil, "GameFontNormal")
-         frame.resizeWindow = Frame_ResizeWindow
-         frame:SetScript("OnDragStart", Button_OnDragStart)
-         frame:SetScript("OnDragStop", Button_OnDragStop)
+   function ButtonBin:GetFrame(callback, parent)
+      local frame = {}
+      callback = callback or frame
+      frame.wnd = GeminiGUI:Create(ButtonBin.binButtonTemplate):GetInstance(callback, parent)
+      frame.wnd:IsMouseTarget(true)
+      frame.icon = frame.wnd:FindChild("Icon")
+      frame.label = frame.wnd:FindChild("Text")
+      frame.label:SetData("CRB_Header12")
+
+      --      frame:RegisterForClicks("AnyUp")
+      frame.resizeWindow = Frame_ResizeWindow
+	 --frmae:SetScript("OnDragStart", Button_OnDragStart)
+--         frame:SetScript("OnDragStop", Button_OnDragStop)
+
          numBlocks = numBlocks + 1
-      end
       return frame
    end
 
@@ -2309,7 +2343,6 @@ do
    }
    function ButtonBin:ReleaseBinFrame(frame, noClear)
       frame.disabled = true
-      LJ:Unregister(frame) -- easier to always do this
       for _,obj in pairs(buttonFrames) do
          if obj:GetParent() == frame then
             mod:ReleaseFrame(obj)
@@ -2338,62 +2371,81 @@ do
 				      Border = false,
 				      Picture = true,
 				      UseTemplateBG = true,
+				      Pixies = {
+					 {
+					    Sprite = "WhiteFill",
+					    AnchorPoints  = "FILL",
+					    AnchorOffsets = {0,0,0,0},
+					    BGColor         = "7f000000",
+					 },
+				      },
+				      Children = {
+					 {
+					    Name = "LeftContainer", 
+					    AnchorPoints = "FILL",
+					 },
+					 {
+					    Name = "RightContainer", 
+					    AnchorPoints = "FILL",
+					 },
+					 {
+					    Name = "CenterContainer", 
+					    AnchorPoints = "FILL",
+					 },
+					 {
+					    -- When this is visible, it's used to drag a bin around.
+					    Name = "ButtonBinMover",
+					    AnchorPoints = "FILL",
+					    AnchorOffsets = {0,0,0,0},
+					    NewWindowDepth = true, 
+					    Pixies = {
+					       Sprite = "WhiteFill",
+					       AnchorPoints  = "FILL",
+					       AnchorOffsets = {0,0,0,0},
+					       BGColor = "ff00ff00",
+					       Text          = "Click to stop moving",
+					       Font          = "CRB_HeaderHuge",
+					       TextColor     = "xkcdYellow",
+					    }
+					 }
+				      }
+					 
 				   }):GetInstance(f)
       f.bin = wnd
+      f.left = wnd:FindChild("LeftContainer")
+      f.right = wnd:FindChild("RightContainer")
+      f.center = wnd:FindChild("CenterContainer")
       wnd:SetData(f)
       wnd:IsMouseTarget(true)
-      log:info(f)
-      log:info(wnd)
       wnd:AddEventHandler("MouseEnter", "OnMouseEnter")
-      wnd:AddEventHandler("MouseLeave", "OnMouseLeave")
+      wnd:AddEventHandler("MouseExit", "OnMouseLeave")
 
-      f.mover = GeminiGUI:Create({
-				    Name="ButtonBinMover",
-				    Movable = true,
-				    }):GetInstance(f)
+      f.mover = wnd:FindChild("ButtonBinMover")
       f.mover:IsMouseTarget(true)
---      f.mover:SetBackdrop(bgFrame)
---      f.mover:SetBackdropColor(0, 1, 0);
---      f.mover:RegisterForClicks("AnyUp")
---      f.mover:SetFrameStrata("HIGH")
---      f.mover:SetFrameLevel(5)
-      f.mover:SetOpacity(0.5)
-      if false then
-	 f.mover:AddEvent("OnDragStart",
-			  function(self) self:StartMoving()
-	 end)
-	 f.mover:AddEvent("OnDragStop",
-			  function(self)
-			     mod:SavePosition(f)
-			     self:StopMovingOrSizing() end)
-	 f.mover:SetScript("OnClick",
-			   function(frame,button)
-			      mod:ToggleLocked()
-	 end)
-	 f.mover.text = CreateFrame("Frame")
-	 f.mover.text:SetPoint("BOTTOMLEFT", f.mover, "TOPLEFT")
-	 f.mover.text:SetPoint("BOTTOMRIGHT", f.mover, "TOPRIGHT")
-	 f.mover.text:SetHeight(30)
-	 f.mover.text:SetFrameStrata("DIALOG")
-	 f.mover.text:SetFrameLevel(10)
-	 
-	 f.mover.text.label = f.mover.text:CreateFontString(nil, nil, "GameFontNormal")
-	 f.mover.text.label:SetJustifyH("CENTER")
-	 f.mover.text.label:SetPoint("BOTTOM")
-	 f.mover.text.label:SetText("Click to stop moving")
-	 f.mover.text.label:SetNonSpaceWrap(true)
-	 f.mover.text:SetAlpha(1)
-	 
-	 f.button = self:GetFrame()
-	 f.button:SetParent(f)
-	 f.button:SetScript("OnClick", BB_OnClick)
-	 if not db.hideBinTooltip then
-	    f.button:SetScript("OnEnter", LDC_OnEnter)
-	    f.button:SetScript("OnLeave", LDC_OnLeave)
-	 end
-	 f.mover:Hide()
-	 f.mover.text:Hide()
+      --      f.mover:RegisterForClicks("AnyUp")
+--      f.mover:SetOpacity(0.5)
+--      f.mover:AddEvent("OnDragStart",
+--		       function(self) self:StartMoving()
+--      end)
+--      f.mover:AddEvent("OnDragStop",
+--		       
+--		       function(self)
+--			  mod:SavePosition(f)
+--			  self:StopMovingOrSizing() end)
+--      f.mover:SetScript("OnClick",
+--			function(frame,button)
+--			   
+--			   mod:ToggleLocked()
+--      end)
+--      
+      f.button = self:GetFrame(f, f.left)
+      --	 f.button:SetScript("OnClick", BB_OnClick)
+      if not db.hideBinTooltip then
+--	 f.button.wnd:AddEventHandler("MouseEnter", "LDC_OnMouseEnter")
+--	 f.button.wnd:AddEventHandler("MouseExit", "LDC_OnMouseLeave")
       end
+      f.mover:Show(false)
+
       return f
    end
    
@@ -2414,3 +2466,21 @@ function ButtonBin:MouseIsOver(frame)
    end
 end
 
+
+ButtonBin.binButtonTemplate = {
+   Name = "BinButton",
+   TooltipType = "OnCursor", 
+   Children = {
+      {
+	 Name = "Icon",
+	 Picture = true, 
+      },
+      {
+	 WidgetType = "MLWindow", 
+	 Name = "Text",
+	 DT_VCENTER = true,
+	 DT_CENTER = true,
+	 DT_SINGLELINE = true,
+      }
+   }
+}
