@@ -72,7 +72,7 @@ local defaults = {
       tooltipScale = 1.0,
       width  = 20,
       hpadding = 0.5,
-      vpadding = 0.5,
+      vpadding = 2, 
       bins = {
 	 ['**'] =  {
 	    colors = {
@@ -108,7 +108,7 @@ local defaults = {
 	    tooltipScale = 1.0,
 	    useGlobal = true,
 	    visibility = "always",
-	    vpadding = 0.5,
+	    vpadding = 2, 
 	    width = 10,
 	    binTexture = "Interface\\AddOns\\ButtonBin\\bin.tga",
 	    center = false, 
@@ -172,11 +172,16 @@ local function LDC_OnReceiveDrag(self, button)
    end
 end
 
-local function LDC_OnClick(self, button)
+local function LDC_OnClick(self, wndHandler, wndControl, button)
+   if wndHandler ~= wndControl then
+      return
+   end
    if self._onclick then
-      LDC_OnLeave(self)
+--      LDC_OnLeave(self)
+      log:info("OnClick pressed")
       self._onclick(self, button)
    end
+   return true
 end
 
 local function BB_OnClick(self, button)
@@ -320,20 +325,21 @@ local function TextUpdater(frame, value, name, obj, delay)
                        obj.value, unitColor, obj.suffix or "")
             plaintext = fmt("%s %s", obj.value, obj.suffix or "")
          else
-            text = fmt("<P Font=\"CRB_Header12\" TextColor=\"ff%s\">%s</P>", textColor, obj.text)
+            text = fmt("<P Font=\"CRB_Header12\"><T TextColor=\"ff%s\">%s</T></P>", textColor, obj.text)
             plaintext = obj.text
          end
       end
-      log:info(text)
       frame.buttonBinText = text
       frame.plainText = plaintext
    end
    if not delay then
-      local w = frame:GetWidth()
+      
+      local preWidth = frame.wnd:GetWidth()
       frame:resizeWindow(true)
-      w = w - frame:GetWidth()
-      if w > 0 or w < -10 then
-         mod:SortFrames(frame:GetParent())
+      local w = frame.wnd:GetWidth() - preWidth
+      log:info("Frame delta = "..w)
+      if w > 0 or w <= -10 then
+         mod:SortFrames(bin)
       end
    end
 end
@@ -388,9 +394,14 @@ local updaters = {
    OnClick = function(frame, value)
       frame._onclick = value
       if value then
-	 --frame:SetScript("OnClick", LDC_OnClick)
+	 frame.wnd:AddEventHandler("MouseButtonUp", "OnMouseButtonUp")
+	 frame.OnMouseButtonUp = LDC_OnClick
+	 log:info("Adding on click handler.")
+	 frame.wnd:IsMouseTarget(true)
       else
-	 --frame:SetScript("OnClick", nil)
+	 log:info("Removing on click handler.")
+	 frame.wnd:IsMouseTarget(false)
+	 frame.OnMouseButtonUp = nil
       end
    end,
    OnReceiveDrag = function(frame, value)
@@ -423,6 +434,7 @@ function ButtonBin:AttributeChanged(event, name, key, value)
 end
 
 function ButtonBin:EnableDataObject(name, obj)
+   log:info(obj)
    db.enabledDataObjects[name].enabled = true
    -- create frame for object
    local frame = buttonFrames[name]
@@ -432,7 +444,7 @@ function ButtonBin:EnableDataObject(name, obj)
       binId = frame.db.bin
    end
    local bin = bins[binId]
-   frame = frame or mod:GetFrame(nil, bin.left) -- TODO fix which one to use
+   frame = frame or mod:GetFrame(nil, bin.left)
    buttonFrames[name] = frame
    frame.db = db.enabledDataObjects[name]
    frame.name = name
@@ -489,30 +501,6 @@ function ButtonBin:OnEnable()
    self:RegisterEvent("UPDATE_FLOATING_CHAT_WINDOWS","RecalculateSizes")
    self:RegisterEvent("PLAYER_REGEN_ENABLED")
    self:RegisterEvent("PLAYER_REGEN_DISABLED")
-
-
-   LDC:NewDataObject("Test1", {
-			type = "launcher",
-			text = "Test 1",
-			icon = "achievements:sprAchievements_Icon_Group",
-			label = "A label",
-			value = "12.0",
-			suffix = "fps",
-			tooltiptext = "A small tooltip.",
-			OnClick = function(clickedframe, button)
-			   log:info("button clicked")
-			end
-   })
-
-   LDC:NewDataObject("Another Test", {
-			text = "Testing", 
-			icon = "abilities:sprAbility_CapEnd3",
-			label = "Another label",
-			tooltiptext = "Hello america.",
-			OnClick = function(clickedframe, button)
-			   log:info("button 2clicked")
-			end
-   })
 end
 
 function ButtonBin:OnDisable()
@@ -1523,13 +1511,13 @@ local function ShowOrHideOnMouseover(self, bdb, force)
 end
 
 function binMetaTable:OnMouseEnter()
---n   self._isMouseOver = true
---   self:ShowOrHide(nil, true)
+   self._isMouseOver = true
+   self:ShowOrHide(nil, true)
 end
 
 function binMetaTable:OnMouseLeave()
---   self._isMouseOver = nil
---   self:ShowOrHide(true) 
+   self._isMouseOver = nil
+   self:ShowOrHide(true) 
 end
 
 function binMetaTable:LDC_OnMouseEnter()
@@ -1964,6 +1952,7 @@ function ButtonBin:GetBinSettings(bin)
 end
 
 function ButtonBin:SortFrames(bin)
+
    if not bin or bin.disabled then return end
    local bdb,sdb = mod:GetBinSettings(bin)
    local sizeOptions
@@ -1985,9 +1974,13 @@ function ButtonBin:SortFrames(bin)
    if sdb.scale ~= bin:GetScale() then
       bin:SetScale(sdb.scale)
    end
+   local padding = sdb.vpadding or 0
    bin:SetWidth(bdb.pixelWidth or sdb.pixelWidth or Apollo.GetScreenSize())
-   bin:SetHeight(sdb.size + (sdb.vpadding or 0))
-
+   bin:SetHeight(sdb.size + (2*padding))
+   bin.left:SetAnchorOffsets(padding, padding, padding, padding)
+   bin.center:SetAnchorOffsets(padding, padding, padding, padding)
+   bin.right:SetAnchorOffsets(padding, padding, padding, padding)
+   
    bin:ShowOrHide()
    bin.left:ArrangeChildrenHorz(0)
    bin.center:ArrangeChildrenHorz(1)
@@ -2233,6 +2226,7 @@ do
          return
       end
 
+
       local iconPoints = {}
       local textPoints  = {}
       if self.name ~= "ButtonBin" and hideIcon and showLabel  and not bdb.labelOnMouse then
@@ -2254,6 +2248,8 @@ do
       if not dontShow then self.wnd:Show(true) end
 
       if showLabel and (not bdb.labelOnMouse or self._isMouseOver) then
+	 local height
+	 self.label:SetAnchorOffsets(iconWidth+3, 0, iconWidth+1000, sdb.size) -- size way large enough
          if bdb.font and bdb.fontsize then
 --            self.label:SetFont(media:Fetch("font", bdb.font), bdb.fontsize)
          end
@@ -2262,10 +2258,9 @@ do
 	 else
 	    self.label:SetText(self.plainText)
 	 end
+	 width,height = self.label:GetContentSize()
 
-	 log:info("Setting text to  "..label)
-	 width = Apollo.GetTextWidth(self.label:GetData(), self.plainText or self.label:GetText())
-	 log:info("Setting text to  "..label.." with width "..width)
+--	 log:info("Setting text to  "..label.." with width "..width.." and height "..height)
          if width > 0 then
             self.label:Show(true)
             if iconWidth > 0 then
@@ -2273,23 +2268,26 @@ do
             else
                width = width + 3
             end
+	    local xoffset = (sdb.size - height)/2
+	    self.label:SetAnchorOffsets(iconWidth+3, xoffset, iconWidth+width, sdb.size)
          else
             width = iconWidth
          end
-	 self.label:SetAnchorOffsets(iconWidth+3, 0, iconWidth+width, sdb.size)
       else
          self.label:SetText("")
          self.label:Show(false)
          width = iconWidth
       end
+      width = width + 4 -- additional spacingt
       if bdb.labelOnMouse and showLabel then
 --         local oldWidth = self.:GetWidth(self)
 --         if oldWidth > 0 and  oldWidth ~= width then
 --            parent:SetWidth(parent:GetWidth() - oldWidth + width)
 --         end
       end
-      log:info("Total width ended up at "..width)
-      self.wnd:SetAnchorOffsets(0, 0, width+2, sdb.size)
+      --log:info("Total width ended up at "..width)
+      local left, top = self.wnd:GetAnchorOffsets()
+      self.wnd:SetAnchorOffsets(left, top, left+width, top+sdb.size)
    end
 
    function ButtonBin:GetFrame(callback, parent)
@@ -2374,9 +2372,8 @@ do
 				      Pixies = {
 					 {
 					    Sprite = "WhiteFill",
-					    AnchorPoints  = "FILL",
-					    AnchorOffsets = {0,0,0,0},
-					    BGColor         = "7f000000",
+					    AnchorPoints = "FILL",
+					    BGColor      = "7f000000", 
 					 },
 				      },
 				      Children = {
