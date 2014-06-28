@@ -7,19 +7,18 @@ Some code from Fortress was used in this addon with permission from the
 author Borlox.
 **********************************************************************
 ]]
-local ButtonBin = Apollo.GetPackage("Gemini:Addon-1.1").tPackage:NewAddon("ButtonBin", false, "Gemini:Event-1.0", "Gemini:Timer-1.0" )
+local ButtonBin = Apollo.GetPackage("Gemini:Addon-1.1").tPackage:NewAddon("ButtonBin", false, {"Gemini:Config-1.0"}, "Gemini:Event-1.0", "Gemini:Timer-1.0" )
 
 local LDC = Apollo.GetPackage("Lib:DataChron-1.0").tPackage
---local R = LibStub("AceConfigRegistry-3.0")
 local GeminiGUI = Apollo.GetPackage("Gemini:GUI-1.0").tPackage
 local GeminiLogging = Apollo.GetPackage("Gemini:Logging-1.2").tPackage
-
+local R
 local BB_DEBUG = false
 
 
 -- Silently fail embedding if it doesn't exist
 local log
---local C = LibStub("AceConfigDialog-3.0")
+local C
 --local DBOpt = LibStub("AceDBOptions-3.0")
 --local media = LibStub("LibSharedMedia-3.0")
 local mod
@@ -337,7 +336,7 @@ local function TextUpdater(frame, value, name, obj, delay)
       local preWidth = frame.wnd:GetWidth()
       frame:resizeWindow(true)
       local w = frame.wnd:GetWidth() - preWidth
-      log:info("Frame delta = "..w)
+--      log:info("Frame delta = "..w)
       if w > 0 or w <= -10 then
          mod:SortFrames(bin)
       end
@@ -469,6 +468,8 @@ function ButtonBin:DisableDataObject(name, obj)
 end
 
 function ButtonBin:OnEnable()
+   R = Apollo.GetPackage("Gemini:ConfigRegistry-1.0").tPackage
+   C = Apollo.GetPackage("Gemini:ConfigDialog-1.0").tPackage
    self.bins = bins
    self.buttonFrames = buttonFrames
    
@@ -708,6 +709,7 @@ function ButtonBin:LoadDefaultBins()
 end
 
 function ButtonBin:ToggleLocked()
+   log:Print("Gogglew locked!")
    unlockFrames = not unlockFrames
    if false then
       for id,bin in ipairs(bins) do
@@ -736,7 +738,7 @@ end
 
 function ButtonBin:ToggleButtonLock()
    unlockButtons = not unlockButtons
-
+   log:info("toggle lock!")
    local dragButton
    if unlockButtons then dragButton = "LeftButton" end
    if unlockButtons then
@@ -1371,17 +1373,18 @@ options = {
 
 
 function ButtonBin:OptReg(optname, tbl, dispname, cmd)
+   local GeminiConfig = Apollo.GetPackage("Gemini:Config-1.0").tPackage
    if dispname then
       optname = "ButtonBin"..optname
-      LibStub("AceConfig-3.0"):RegisterOptionsTable(optname, tbl, cmd)
-      if not cmd then
-         return LibStub("AceConfigDialog-3.0"):AddToBlizOptions(optname, dispname, "Button Bin")
-      end
+      GeminiConfig:RegisterOptionsTable(optname, tbl, cmd)
+ --     if not cmd then
+--         return LibStub("AceConfigDialog-3.0"):AddToBlizOptions(optname, dispname, "Button Bin")
+--      end
    else
-      LibStub("AceConfig-3.0"):RegisterOptionsTable(optname, tbl, cmd)
-      if not cmd then
-         return LibStub("AceConfigDialog-3.0"):AddToBlizOptions(optname, "Button Bin")
-      end
+      GeminiConfig:RegisterOptionsTable(optname, tbl, cmd)
+--      if not cmd then
+--         return LibStub("AceConfigDialog-3.0"):AddToBlizOptions(optname, "Button Bin")
+--      end
    end
 end
 
@@ -1917,15 +1920,12 @@ function ButtonBin:SetupDataBlockOptions(reload)
 end
 
 function ButtonBin:SetupOptions()
-   if false then
-      options.profile = DBOpt:GetOptionsTable(self.db)
-      mod.main = mod:OptReg("Button Bin", options.global)
-      mod:SetupBinOptions()
-      mod:SetupDataBlockOptions()
-      mod.profile = mod:OptReg(": Profiles", options.profile, "Profiles")
-      mod:OptReg("Button Bin CmdLine", options.cmdline, nil,  { "buttonbin", "bin" })
-   end
-   
+--   options.profile = DBOpt:GetOptionsTable(self.db)
+   mod.main = mod:OptReg("Button Bin", options.global)
+   mod:SetupBinOptions()
+   mod:SetupDataBlockOptions()
+  -- mod.profile = mod:OptReg(": Profiles", options.profile, "Profiles")
+   mod:OptReg("Button Bin CmdLine", options.cmdline, nil,  { "buttonbin", "bin" })
 end
 
 function ButtonBin:ToggleConfigDialog(frame)
