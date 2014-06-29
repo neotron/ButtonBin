@@ -43,6 +43,7 @@ local binTimers = {}
 local ldbObjects = {}
 local buttonFrames = {}
 local options
+local topLevelOptions
 local db
 
 local unlockButtons = false
@@ -204,6 +205,7 @@ end
 
 function ButtonBin:OnInitialize()
    mod = self
+   self:ConfigureOptionTree()
    self.db = Apollo.GetPackage("Gemini:DB-1.0").tPackage:New(self,  defaults)
    self.db.RegisterCallback(self, "OnProfileChanged", "OnProfileChanged")
    self.db.RegisterCallback(self, "OnProfileCopied", "OnProfileChanged")
@@ -686,6 +688,10 @@ function ButtonBin:LoadDefaultBins()
       clampToScreen = false,
       binName = "Button Bin"
    }
+   for k in pairs(buttonFrames) do
+      buttonFrames[k] = nil
+   end
+
    for id in ipairs(db.bins) do
       if bins[id] then
 	 mod:ReleaseBinFrame(bins[id])
@@ -709,7 +715,6 @@ function ButtonBin:LoadDefaultBins()
 end
 
 function ButtonBin:ToggleLocked()
-   log:Print("Gogglew locked!")
    unlockFrames = not unlockFrames
    if false then
       for id,bin in ipairs(bins) do
@@ -771,11 +776,11 @@ function ButtonBin:ReloadFrame(bin)
    local wasUnlocked = unlockFrames
    if wasUnlocked then mod:ToggleLocked() end
    if not db.hideBinTooltip then
-      bin.button:SetScript("OnEnter", LDC_OnEnter)
-      bin.button:SetScript("OnLeave", LDC_OnLeave)
+--      bin.button:SetScript("OnEnter", LDC_OnEnter)
+--      bin.button:SetScript("OnLeave", LDC_OnLeave)
    else
-      bin.button:SetScript("OnEnter", nil)
-      bin.button:SetScript("OnLeave", nil)
+  --    bin.button:SetScript("OnEnter", nil)
+--      bin.button:SetScript("OnLeave", nil)
    end
    mod:UpdateAllBlocks(bin)
    mod:SavePosition(bin)
@@ -783,594 +788,6 @@ function ButtonBin:ReloadFrame(bin)
    mod:SortFrames(bin)
    if wasUnlocked then mod:ToggleLocked() end
 end
-
-options = {
-   global = {
-      type = "group",
-      name = "Global Settings",
-      order = 4,
-      childGroups = "tab",
-      handler = mod,
-      get = "GetOption",
-      set = "SetOption",
-      args = {
-         toggle ={
-            type = "toggle",
-            name = "Lock the button bin frame",
-            width = "full",
-            get = function() return not unlockFrames end,
-            set = function() mod:ToggleLocked() end,
-         },
-         tooltipScale = {
-            type = "range",
-            name = "Tooltip Scale",
-            desc = "The scale of the tooltip for this datablock",
-            width="full",
-            min = 0.1, max = 5, step = 0.05,
-         },
-         toggleButton = {
-            type = "toggle",
-            name = "Lock data broker button positions",
-            desc = "When unlocked, you can move buttons into a new position on the bar.",
-            width = "full",
-            get = function() return not unlockButtons end,
-            set = function() mod:ToggleButtonLock() end
-         },
-         hideBinTooltip = {
-            type = "toggle",
-            width = "full",
-            name = "Hide Button Bin tooltips",
-            desc = "Decide whether or not to show the helper tooltip when mousing over the Button Bin icons.",
-         },
-         globalScale = {
-            type = "group",
-            name = "Scale and size",
-            args = {
-               hpadding = {
-                  type = "range",
-                  name = "Horizontal button padding",
-                  width = "full",
-                  min = 0, max = 50, step = 0.1,
-                  order = 130,
-               },
-               vpadding = {
-                  type = "range",
-                  name = "Vertical button padding",
-                  width = "full",
-                  min = 0, max = 50, step = 0.1,
-                  order = 140,
-               },
-               size = {
-                  type = "range",
-                  name = "Button size",
-                  width = "full",
-                  min = 5, max = 50, step = 1,
-                  order = 160,
-               },
-               scale = {
-                  type = "range",
-                  name = "Bin scale",
-                  width = "full",
-                  min = 0.01, max = 5, step = 0.01,
-                  order = 170,
-               },
-            }
-
-         }
-      }
-   },
-
-   dataBlock = {
-      type = "group",
-      handler = mod,
-      set = "SetDataBlockOption",
-      get = "GetDataBlockOption",
-      args = {
-         help = {
-            type = "description",
-            name = "You can override the bar level configuration in this section. Note that when enabled, these settings will always override the settings of the individual bins.",
-            order = 0,
-            hidden = function() return bins[1] == nil end,
-         },
-         enabled = {
-            type="toggle",
-            name = "Enabled",
-            desc = "Toggle to enable display of this datablock.",
-            order = 1,
-            disabled = function() return bins[1] == nil end,
-         },
-         blockOverride = {
-            type = "toggle",
-            name = "Override bin config",
-            desc = "If override is enabled, the settings here are used over the bin level configuration. Otherwise the block will be displayed as per the bin settings.",
-            order = 2,
-            hidden = "HideOverrideConfig",
-         },
-	 hideTooltip = {
-	    type = "toggle",
-	    name = "Hide tooltip",
-	    desc = "Don't show the mouseover tooltip for this block.",
-	    order = 10,
-	 },	 
-         hideIcon = {
-            type = "toggle",
-            name = "Hide icon",
-            desc = "Hide the icon for this datablock.",
-            hidden = "HideDataBlockOptions"
-         },
-         hideLabel = {
-            type = "toggle",
-            name = "Hide label",
-            desc = "Hide the label for this datablock",
-            hidden = "HideDataBlockOptions"
-         },
-         hideText = {
-            type = "toggle",
-            name = "Hide text",
-            desc = "Hide the text for this data block.",
-            hidden = "HideDataBlockOptions",
-         },
-         hideValue = {
-            type = "toggle",
-            name = "Hide values",
-            desc = "Hide the value for this data block.",
-            hidden = "HideDataBlockOptions",
-         },
-         tooltipScale = {
-            type = "range",
-            name = "Tooltip Scale",
-            desc = "The scale of the tooltip for this datablock",
-            width="full",
-            min = 0.1, max = 5, step = 0.05,
-            hidden = "HideDataBlockOptions"
-         },
-         bin = {
-            type = "select",
-            name = "Bin",
-            desc = "The bin this datablock resides in.",
-            width = "full",
-            values = function() local val = {}
-	       for id,bdb in pairs(db.bins) do
-		  val[id]= bdb.binName
-	       end
-	       return val
-                     end,
-         }
-      }
-   },
-
-   bins = {
-      type = "group",
-      name = "Bins",
-      handler = mod,
-      args = {
-         newbin = {
-            type = "execute",
-            name = "Add a new bin",
-            desc = "Create a new display bin.",
-            func = "AddNewBin",
-         },
-	 loaddefaults = {
-	    type = "execute",
-	    name = "Reset Bin Layout",
-	    desc = "This will remove your existing set of bins and load the default three bin left/center/right setup. All datablocks will be reset to be shown in the first bin as well.",
-	    func = "LoadDefaultBins",
-	 }
-      }
-   },
-   binConfig = {
-      type = "group",
-      name = "Bin #",
-      order = 4,
-      --      childGroups = "tab",
-      get = "GetOption",
-      set = "SetOption",
-      args = {
-         help = {
-            type = "description",
-            name = "Select the sub-sections to configure this bin. You can also delete the bin permanently by clicking the button below.",
-            order = 1,
-         },
-         separator = {
-            type = "header",
-            name = "",
-            order = 2,
-         },
-         delete = {
-            type = "execute",
-            name = "Delete bin",
-            desc = "Delete this bin. All objects displayed in this bin will be hidden and all settings purged.",
-            func = "DeleteBin",
-            confirm = true,
-            confirmText = "Are you sure that you want to delete this bin? This action can't be reverted.",
-            order = 10,
-         },
-         binIcon = {
-            type = "group",
-            name = "Bin Icon and Name",
-            args = {
-               binName = {
-                  type = "input",
-                  name = "Bin Name",
-                  desc = "The name of the bin, used in the configuration UI and the bin icon if shown.",
-                  order = 3,
-                  disabled = "DisableBinIconOptions",
-               },
-               binTexture =  {
-                  type = "input",
-                  name = "Bin Icon Texture",
-                  desc = "The path to the texture used as the bin icon.",
-                  order = 4,
-                  disabled = "DisableBinIconOptions",
-               },
-               hideBinIcon = {
-                  width = "full",
-                  type = "toggle",
-                  name = "Hide button bin icon",
-                  desc = "Hide or show the button bin icon for this bin.",
-                  order = 1
-               },
-               binLabel = {
-                  type = "toggle",
-                  width = "full",
-                  name = "Show label for the ButtonBin icon ",
-                  order = 50,
-                  disabled = "DisableBinLabelOption",
-               },
-            },
-         },
-         general = {
-            type = "group",
-            name = "General",
-            args = {
-               hideEmpty = {
-                  type = "toggle",
-                  name = "Hide blocks without icons",
-                  desc = "This will hide all addons that lack icons instead of showing an empty space.",
-                  width = "full",
-                  order = 10,
-               },
-               hideTooltips = {
-                  type = "toggle",
-                  name = "Hide tooltips",
-                  desc = "Don't show the mouseover tooltips for any blocks in this bin, unless overriden by the block level configuration.",
-                  width = "full",
-                  order = 10,
-               },
-               moveFrames = {
-                  type = "toggle",
-                  name = "Move Blizzard frames",
-                  desc = "When enabled, default Blizzard frames such as the minimap, buff frame etc will be moved to make room for this bin. This is useful if you want your bin to sit at the top or bottom of the frame without overlapping Blizzard frames..",
-                  width = "full",
-                  order = 10,
-               },
-               clampToScreen = {
-                  type = "toggle",
-                  name = "Clamp to screen",
-                  desc = "Prevent the bin to be moved outside the boundaries of the screen.",
-                  width = "full",
-                  order = 10,
-               },
-               hidden = {
-                  type = "toggle",
-                  name = "Hide button bin",
-                  width = "full",
-                  desc = "Hide or show this bin.",
-                  order = 20,
-               },
-               hideIcons = {
-                  width = "full",
-                  type = "toggle",
-                  name = "Hide all icons",
-                  desc = "Hide the icons of all datablocks in this bin. Note that datablocks without a label will be invisible if this is enabled.",
-                  order = 31,
-                  disabled = "DisableLabelOption",
-               },
-               headerVisibility = {
-                  type = "header",
-                  name = "Visibility",
-                  order = 100,
-               },
-               visibility = {
-                  type = "select",
-                  name = "Bin visibility",
-                  values = {
-                     always = "Always visible",
-                     mouse = "Show on mouseover",
-                     inCombat = "Show only in combat",
-                     noCombat = "Hide during combat",
-                     mouseNoCombat = "Mouseover, not combat",
-                  },
-                  order = 110,
-               },
-               hideTimeout = {
-                  type = "range",
-                  name = "Seconds until hidden",
-                  desc = "Wait this many seconds until hiding the bin after the condition is met (in combat etc).",
-                  disabled = "DisableHideOption",
-                  min = 0, max = 15, step = 0.1,
-                  order = 120,
-               },
-
-            }
-         },
-         colors = {
-            type = "group",
-            name = "Text Colors",
-            set = "SetColorOpt",
-            get = "GetColorOpt",
-            args = {
-               labelColor = {
-                  type = "color",
-                  name = "Label color",
-                  hasAlpha = false,
-               },
-               textColor = {
-                  type = "color",
-                  name = "Text color",
-                  hasAlpha = false,
-               },
-               unitColor = {
-                  type = "color",
-                  name = "Unit color",
-                  hasAlpha = false,
-               },
-               valueColor = {
-                  type = "color",
-                  name = "Value color",
-                  hasAlpha = false,
-               },
-            }
-         },
-         labels = {
-            type = "group",
-            name = "Text Labels",
-            args = {
-               hideAllText = {
-                  width = "full",
-                  type = "toggle",
-                  name = "Hide all text",
-                  desc = "Hide all text, showing only the icons.",
-                  order = 40,
-               },
-               labelOnMouse = {
-                  width = "full",
-                  type = "toggle",
-                  name = "Show text only on mouse over",
-                  desc = "Don't show any datablock text unless the cursor is hovering over it.",
-                  order = 80,
-                  disabled = "DisableLabelOption",
-               },
-               hideLabel = {
-                  width = "full",
-                  type = "toggle",
-                  name = "Hide labels",
-                  desc = "Hide the data block labels.",
-                  order = 70,
-                  disabled = "DisableLabelOption",
-               },
-               hideText = {
-                  width = "full",
-                  type = "toggle",
-                  name = "Hide text",
-                  desc = "Hide the data block text.",
-                  order = 70,
-                  disabled = "DisableLabelOption",
-               },
-               hideValue = {
-                  width = "full",
-                  type = "toggle",
-                  name = "Hide values",
-                  desc = "Hide the data block values.",
-                  order = 70,
-                  disabled = "DisableLabelOption",
-               },
-            },
-         },
-         lookandfeel = {
-            type = "group",
-            name = "Look & Feel",
-            args = {
-               background= {
-                  type = 'select',
-                  dialogControl = 'LSM30_Background',
-                  name = 'Background texture',
-                  desc = 'The background texture used for the bin.',
-                  order = 20,
-                  values = {} --AceGUIWidgetLSMlists.background,
-               },
-               border = {
-                  type = 'select',
-                  dialogControl = 'LSM30_Border',
-                  name = 'Border texture',
-                  desc = 'The border texture used for the bin.',
-                  order = 40,
-                  values = {} --AceGUIWidgetLSMlists.border,
-               },
-               backgroundColor = {
-                  type = "color",
-                  name = "Background color",
-                  hasAlpha = true,
-                  set = "SetColorOpt",
-                  get = "GetColorOpt",
-                  order = 30,
-               },
-               borderColor = {
-                  type = "color",
-                  name = "Border color",
-                  hasAlpha = true,
-                  set = "SetColorOpt",
-                  get = "GetColorOpt",
-                  order = 50,
-               },
-               edgeSize = {
-                  type = "range",
-                  name = "Edge size",
-                  desc = "Width of the border.",
-                  min = 1, max = 50, step = 0.1,
-               },
-               font = {
-                  type = 'select',
-                  dialogControl = 'LSM30_Font',
-                  name = 'Font',
-                  desc = 'Font used on the bars',
-                  values =  {}, --AceGUIWidgetLSMlists.font,
-		  order = 1,
-               },
-               fontsize = {
-                  order = 1,
-                  type = "range",
-                  name = "Font size",
-                  min = 1, max = 30, step = 1,
-                  order = 2
-               },
-            },
-         },
-         orientation = {
-            type = "group",
-            name = "Orientation",
-            args = {
-               flipx = {
-                  type = "toggle",
-                  name = "Flip x-axis",
-                  desc = "If toggled, the buttons will expand to the left instead of to the right.",
-                  order = 90,
-               },
-               flipy = {
-                  type = "toggle",
-                  name = "Flip y-axis",
-                  desc = "If toggled, the buttons will expand upwards instead of downwards.",
-                  order = 100,
-               },
-               flipicons = {
-                  type = "toggle",
-                  name = "Icons on the right",
-                  desc = "If checked, icons will be placed to the right of the label.",
-                  order = 110,
-               },
-               center = {
-                  type = "toggle",
-                  name = "Center alignment",
-                  desc = "All rows will be center aligned in the bin.",
-                  order = 120,
-               }
-            }
-         },
-         spacing = {
-            type = "group",
-            name = "Sizing",
-            args = {
-               useGlobal = {
-                  type = "toggle",
-                  name = "Use global settings",
-                  desc = "Use global settings for scale, button size and padding.",
-                  order = 1,
-               },
-               resetFromGlobal = {
-                  type = "execute",
-                  name = "Copy global settings",
-                  desc = "Copy parameters from the global Button Bin settings. This will override the bin specific settings.",
-                  func = "CopyGlobalSettings",
-                  disabled = "UsingGlobalScale",
-                  order = 2,
-               },
-               hpadding = {
-                  type = "range",
-                  name = "Horizontal padding",
-                  desc = "Horizontal space between each datablock.",
-                  width = "full",
-                  hidden = "UsingGlobalScale",
-                  min = 0, max = 50, step = 0.1,
-                  order = 130,
-               },
-               vpadding = {
-                  type = "range",
-                  hidden = "UsingGlobalScale",
-                  name = "Vertical padding",
-                  desc = "Space between datablock rows.",
-                  width = "full",
-                  min = 0, max = 50, step = 0.1,
-                  order = 140,
-               },
-               size = {
-                  type = "range",
-                  name = "Icon size",
-                  hidden = "UsingGlobalScale",
-                  desc = "Icon size in pixels.",
-                  width = "full",
-                  min = 5, max = 50, step = 1,
-                  order = 160,
-               },
-               scale = {
-                  type = "range",
-                  hidden = "UsingGlobalScale",
-                  name = "Bin scale",
-                  desc = "Relative scale of the bin and all contents.",
-                  width = "full",
-                  min = 0.01, max = 5, step = 0.01,
-                  order = 170,
-               },
-               width = {
-                  type = "range",
-                  name = "Max blocks per row",
-                  desc = "Maximum number of blocks to place per row. Note that regardless of this setting, you will never get a bin wider than the absolute width specified.",
-                  width = "full",
-                  min = 1, max = 200, step = 1,
-                  order = 180,
-               },
-               pixelwidth = {
-                  type = "range",
-                  name = "Bin width",
-                  desc = "Width of the bin. If zero, the width is dynamically determined by the max blocks setting. If non-zero the row will wrap to avoid going beyond this width. Note that at minimum of one block always be placed on each row so for very small values, the bin might be wider than this setting.",
-                  width = "full",
-                  min = 0, max = 4000, step = 1,
-                  order = 180,
-               },
-               tooltipScale = {
-                  type = "range",
-                  name = "Tooltip Scale",
-                  desc = "The scale of the tooltips for the datablocks in this bin.",
-                  width="full",
-                  min = 0.1, max = 5, step = 0.05,
-                  disabled = "UsingGlobalScale",
-                  order = 190,
-               },
-            }
-         }
-      }
-   },
-   objconfig = {
-      name = "Data Object Configuration",
-      type = "group",
-      args = {
-         help = {
-            type = "description",
-            name = "There are currently no bins configured. Please add a bin before configuring the data blocks.\n\n",
-            order = 0,
-            hidden = function() return bins[1] end,
-         },
-      }
-   },
-   cmdline = {
-      name = "Command Line",
-      type = "group",
-      args = {
-         config = {
-            type = "execute",
-            name = "Show configuration dialog",
-            func = function() mod:ToggleConfigDialog() end,
-            dialogHidden = true
-         },
-         toggle = {
-            type = "execute",
-            name = "Toggle the frame lock",
-            func = function() mod:ToggleLocked() end,
-            dialogHidden = true
-         },
-      }
-   }
-}
-
 
 function ButtonBin:OptReg(optname, tbl, dispname, cmd)
    local GeminiConfig = Apollo.GetPackage("Gemini:Config-1.0").tPackage
@@ -1793,12 +1210,12 @@ function binMetaTable:GetScale()
 end
 
 function binMetaTable:SetWidth(width)
-   left, top, right, bottom = self.bin:GetAnchorOffsets()
+   local left, top, right, bottom = self.bin:GetAnchorOffsets()
    self.bin:SetAnchorOffsets(left, top, left+width, bottom)
 end
 
 function binMetaTable:SetHeight(height)
-   left, top, right, bottom = self.bin:GetAnchorOffsets()
+   local left, top, right, bottom = self.bin:GetAnchorOffsets()
    self.bin:SetAnchorOffsets(left, top, right, top + (height or 30))
 end
 
@@ -1859,8 +1276,8 @@ function ButtonBin:UpdateAllBlocks(name, parent)
    end
 end
 
-local disabled = "|cff999999%s|r"
-local override = "|cffffff00%s|r"
+local disabled = "- %s"
+local override = "* %s"
 --local enabled = "|cff00cf00%s|r"
 
 function ButtonBin:SetupDataBlockOptions(reload)
@@ -1922,15 +1339,18 @@ end
 function ButtonBin:SetupOptions()
 --   options.profile = DBOpt:GetOptionsTable(self.db)
    mod.main = mod:OptReg("Button Bin", options.global)
+   mod.main = mod:OptReg("Button Bin Test", topLevelOptions)
    mod:SetupBinOptions()
    mod:SetupDataBlockOptions()
   -- mod.profile = mod:OptReg(": Profiles", options.profile, "Profiles")
    mod:OptReg("Button Bin CmdLine", options.cmdline, nil,  { "buttonbin", "bin" })
 end
 
+
 function ButtonBin:ToggleConfigDialog(frame)
-   InterfaceOptionsFrame_OpenToCategory(mod.profile)
-   InterfaceOptionsFrame_OpenToCategory(mod.main)
+--   InterfaceOptionsFrame_OpenToCategory(mod.profile)
+--   InterfaceOptionsFrame_OpenToCategory(mod.main)
+   Apollo.GetPackage("Gemini:ConfigDialog-1.0").tPackage:Open("Button Bin Test")
 end
 
 function ButtonBin:ToggleCollapsed(frame)
@@ -2309,21 +1729,8 @@ do
    end
 
    function ButtonBin:ReleaseFrame(frame)
-      local bin = frame:GetParent()
---      mod:Print("Releasing button frame ", frame.name)
       buttonFrames[frame.name] = nil
-      unusedFrames[#unusedFrames+1] = frame
-      frame:Hide()
-      frame:SetParent(nil)
-      frame.buttonBinText = nil
-      frame.db = nil
-      frame.name = nil
-      frame.obj = nil
-      frame._has_texture = nil
-      frame:SetScript("OnEnter", nil)
-      frame:SetScript("OnLeave", nil)
-      frame:SetScript("OnClick", nil)
-      frame:SetScript("OnReceiveDrag", nil)
+      frame.wnd:Destroy()
       if bin and not bin.disabled then self:SortFrames(bin) end
    end
 end
@@ -2340,23 +1747,7 @@ do
       insets = {left = 1, right = 1, top = 1, bottom = 1}
    }
    function ButtonBin:ReleaseBinFrame(frame, noClear)
-      frame.disabled = true
-      for _,obj in pairs(buttonFrames) do
-         if obj:GetParent() == frame then
-            mod:ReleaseFrame(obj)
-         end
-      end
-      unusedBinFrames[#unusedBinFrames+1] = frame
---      mod:Print("Released bin frame id ", frame.binId,  " at position #", #unusedBinFrames)
-      if not noClear then
-         bins[frame.binId] = nil
-      end
-      frame.button.db = nil
-      frame.button.binId = nil
-      frame.button.obj = nil
-      frame.mover.text:Hide()
-      frame.mover:Hide()
-      frame:Hide()
+      frame.bin:Destroy()
    end
 
    function ButtonBin:GetBinFrame()
@@ -2481,3 +1872,601 @@ ButtonBin.binButtonTemplate = {
       }
    }
 }
+
+function ButtonBin:ConfigureOptionTree()
+   options = {
+      global = {
+	 type = "group",
+	 name = "Global Settings",
+	 order = 4,
+	 childGroups = "tab",
+	 handler = mod,
+	 get = "GetOption",
+	 set = "SetOption",
+	 args = {
+	    toggle ={
+	       type = "toggle",
+	       name = "Lock the button bin frame",
+	       width = "full",
+	       get = function() return not unlockFrames end,
+	       set = function() mod:ToggleLocked() end,
+	    },
+	    tooltipScale = {
+	       type = "range",
+	       name = "Tooltip Scale",
+	       desc = "The scale of the tooltip for this datablock",
+	       width="full",
+	       min = 0.1, max = 5, step = 0.05,
+	    },
+	    toggleButton = {
+	       type = "toggle",
+	       name = "Lock data broker button positions",
+	       desc = "When unlocked, you can move buttons into a new position on the bar.",
+	       width = "full",
+	       get = function() return not unlockButtons end,
+	       set = function() Print("toggle.")
+		  mod:ToggleButtonLock() end
+	    },
+	    hideBinTooltip = {
+	       type = "toggle",
+	       width = "full",
+	       name = "Hide Button Bin tooltips",
+	       desc = "Decide whether or not to show the helper tooltip when mousing over the Button Bin icons.",
+	    },
+	    scaleheader = {
+	       type = "header",
+	       name = "Scale and Size",
+	    },
+	    hpadding = {
+	       type = "range",
+	       name = "Horizontal button padding",
+	       width = "full",
+	       min = 0, max = 50, step = 0.1,
+	       order = 130,
+	    },
+	    vpadding = {
+	       type = "range",
+	       name = "Vertical button padding",
+	       width = "full",
+	       min = 0, max = 50, step = 0.1,
+	       order = 140,
+	    },
+	    size = {
+	       type = "range",
+	       name = "Button size",
+	       width = "full",
+	       min = 5, max = 50, step = 1,
+	       order = 160,
+	    },
+	    scale = {
+	       type = "range",
+	       name = "Bin scale",
+	       width = "full",
+	       min = 0.01, max = 5, step = 0.01,
+	       order = 170,
+	    },
+	 }
+      },
+
+      dataBlock = {
+	 type = "group",
+	 handler = mod,
+	 set = "SetDataBlockOption",
+	 get = "GetDataBlockOption",
+	 args = {
+	    help = {
+	       type = "description",
+	       name = "You can override the bar level configuration in this section. Note that when enabled, these settings will always override the settings of the individual bins.",
+	       order = 0,
+	       hidden = function() return bins[1] == nil end,
+	    },
+	    enabled = {
+	       type="toggle",
+	       name = "Enabled",
+	       desc = "Toggle to enable display of this datablock.",
+	       order = 1,
+	       disabled = function() return bins[1] == nil end,
+	    },
+	    blockOverride = {
+	       type = "toggle",
+	       name = "Override bin config",
+	       desc = "If override is enabled, the settings here are used over the bin level configuration. Otherwise the block will be displayed as per the bin settings.",
+	       order = 2,
+	       hidden = "HideOverrideConfig",
+	    },
+	    hideTooltip = {
+	       type = "toggle",
+	       name = "Hide tooltip",
+	       desc = "Don't show the mouseover tooltip for this block.",
+	       order = 10,
+	    },	 
+	    hideIcon = {
+	       type = "toggle",
+	       name = "Hide icon",
+	       desc = "Hide the icon for this datablock.",
+	       hidden = "HideDataBlockOptions"
+	    },
+	    hideLabel = {
+	       type = "toggle",
+	       name = "Hide label",
+	       desc = "Hide the label for this datablock",
+	       hidden = "HideDataBlockOptions"
+	    },
+	    hideText = {
+	       type = "toggle",
+	       name = "Hide text",
+	       desc = "Hide the text for this data block.",
+	       hidden = "HideDataBlockOptions",
+	    },
+	    hideValue = {
+	       type = "toggle",
+	       name = "Hide values",
+	       desc = "Hide the value for this data block.",
+	       hidden = "HideDataBlockOptions",
+	    },
+	    tooltipScale = {
+	       type = "range",
+	       name = "Tooltip Scale",
+	       desc = "The scale of the tooltip for this datablock",
+	       width="full",
+	       min = 0.1, max = 5, step = 0.05,
+	       hidden = "HideDataBlockOptions"
+	    },
+	    bin = {
+	       type = "select",
+	       name = "Bin",
+	       desc = "The bin this datablock resides in.",
+	       width = "full",
+	       values = function() local val = {}
+		  for id,bdb in pairs(db.bins) do
+		     val[id]= bdb.binName
+		  end
+		  return val
+			end,
+	    }
+	 }
+      },
+
+      bins = {
+	 type = "group",
+	 name = "Bins",
+	 handler = mod,
+	 args = {
+	    newbin = {
+	       type = "execute",
+	       name = "Add a new bin",
+	       desc = "Create a new display bin.",
+	       func = "AddNewBin",
+	    },
+	    loaddefaults = {
+	       type = "execute",
+	       name = "Reset Bin Layout",
+	       desc = "This will remove your existing set of bins and load the default three bin left/center/right setup. All datablocks will be reset to be shown in the first bin as well.",
+	       func = "LoadDefaultBins",
+	    }
+	 }
+      },
+      binConfig = {
+	 type = "group",
+	 name = "Bin #",
+	 order = 4,
+	 --      childGroups = "tab",
+	 get = "GetOption",
+	 set = "SetOption",
+	 args = {
+	    help = {
+	       type = "description",
+	       name = "Select the sub-sections to configure this bin. You can also delete the bin permanently by clicking the button below.",
+	       order = 1,
+	    },
+	    separator = {
+	       type = "header",
+	       name = "",
+	       order = 2,
+	    },
+	    delete = {
+	       type = "execute",
+	       name = "Delete bin",
+	       desc = "Delete this bin. All objects displayed in this bin will be hidden and all settings purged.",
+	       func = "DeleteBin",
+	       confirm = true,
+	       confirmText = "Are you sure that you want to delete this bin? This action can't be reverted.",
+	       order = 10,
+	    },
+	    binIcon = {
+	       type = "group",
+	       name = "Bin Icon and Name",
+	       args = {
+		  binName = {
+		     type = "input",
+		     name = "Bin Name",
+		     desc = "The name of the bin, used in the configuration UI and the bin icon if shown.",
+		     order = 3,
+		     disabled = "DisableBinIconOptions",
+		  },
+		  binTexture =  {
+		     type = "input",
+		     name = "Bin Icon Texture",
+		     desc = "The path to the texture used as the bin icon.",
+		     order = 4,
+		     disabled = "DisableBinIconOptions",
+		  },
+		  hideBinIcon = {
+		     width = "full",
+		     type = "toggle",
+		     name = "Hide button bin icon",
+		     desc = "Hide or show the button bin icon for this bin.",
+		     order = 1
+		  },
+		  binLabel = {
+		     type = "toggle",
+		     width = "full",
+		     name = "Show label for the ButtonBin icon ",
+		     order = 50,
+		     disabled = "DisableBinLabelOption",
+		  },
+	       },
+	    },
+	    general = {
+	       type = "group",
+	       name = "General",
+	       args = {
+		  hideEmpty = {
+		     type = "toggle",
+		     name = "Hide blocks without icons",
+		     desc = "This will hide all addons that lack icons instead of showing an empty space.",
+		     width = "full",
+		     order = 10,
+		  },
+		  hideTooltips = {
+		     type = "toggle",
+		     name = "Hide tooltips",
+		     desc = "Don't show the mouseover tooltips for any blocks in this bin, unless overriden by the block level configuration.",
+		     width = "full",
+		     order = 10,
+		  },
+		  moveFrames = {
+		     type = "toggle",
+		     name = "Move Blizzard frames",
+		     desc = "When enabled, default Blizzard frames such as the minimap, buff frame etc will be moved to make room for this bin. This is useful if you want your bin to sit at the top or bottom of the frame without overlapping Blizzard frames..",
+		     width = "full",
+		     order = 10,
+		  },
+		  clampToScreen = {
+		     type = "toggle",
+		     name = "Clamp to screen",
+		     desc = "Prevent the bin to be moved outside the boundaries of the screen.",
+		     width = "full",
+		     order = 10,
+		  },
+		  hidden = {
+		     type = "toggle",
+		     name = "Hide button bin",
+		     width = "full",
+		     desc = "Hide or show this bin.",
+		     order = 20,
+		  },
+		  hideIcons = {
+		     width = "full",
+		     type = "toggle",
+		     name = "Hide all icons",
+		     desc = "Hide the icons of all datablocks in this bin. Note that datablocks without a label will be invisible if this is enabled.",
+		     order = 31,
+		     disabled = "DisableLabelOption",
+		  },
+		  headerVisibility = {
+		     type = "header",
+		     name = "Visibility",
+		     order = 100,
+		  },
+		  visibility = {
+		     type = "select",
+		     name = "Bin visibility",
+		     values = {
+			always = "Always visible",
+			mouse = "Show on mouseover",
+			inCombat = "Show only in combat",
+			noCombat = "Hide during combat",
+			mouseNoCombat = "Mouseover, not combat",
+		     },
+		     order = 110,
+		  },
+		  --               hideTimeout = {
+		  --                  type = "range",
+		  --                  name = "Seconds until hidden",
+		  --                  desc = "Wait this many seconds until hiding the bin after the condition is met (in combat etc).",
+		  --                  disabled = "DisableHideOption",
+		  --                  min = 0, max = 15, step = 0.1,
+		  --                  order = 120,
+		  --               },
+		  --
+	       }
+	    },
+	    colors = {
+	       type = "group",
+	       name = "Text Colors",
+	       set = "SetColorOpt",
+	       get = "GetColorOpt",
+	       args = {
+		  labelColor = {
+		     type = "color",
+		     name = "Label color",
+		     hasAlpha = false,
+		  },
+		  textColor = {
+		     type = "color",
+		     name = "Text color",
+		     hasAlpha = false,
+		  },
+		  unitColor = {
+		     type = "color",
+		     name = "Unit color",
+		     hasAlpha = false,
+		  },
+		  valueColor = {
+		     type = "color",
+		     name = "Value color",
+		     hasAlpha = false,
+		  },
+	       }
+	    },
+	    labels = {
+	       type = "group",
+	       name = "Text Labels",
+	       args = {
+		  hideAllText = {
+		     width = "full",
+		     type = "toggle",
+		     name = "Hide all text",
+		     desc = "Hide all text, showing only the icons.",
+		     order = 40,
+		  },
+		  labelOnMouse = {
+		     width = "full",
+		     type = "toggle",
+		     name = "Show text only on mouse over",
+		     desc = "Don't show any datablock text unless the cursor is hovering over it.",
+		     order = 80,
+		     disabled = "DisableLabelOption",
+		  },
+		  hideLabel = {
+		     width = "full",
+		     type = "toggle",
+		     name = "Hide labels",
+		     desc = "Hide the data block labels.",
+		     order = 70,
+		     disabled = "DisableLabelOption",
+		  },
+		  hideText = {
+		     width = "full",
+		     type = "toggle",
+		     name = "Hide text",
+		     desc = "Hide the data block text.",
+		     order = 70,
+		     disabled = "DisableLabelOption",
+		  },
+		  hideValue = {
+		     width = "full",
+		     type = "toggle",
+		     name = "Hide values",
+		     desc = "Hide the data block values.",
+		     order = 70,
+		     disabled = "DisableLabelOption",
+		  },
+	       },
+	    },
+	    lookandfeel = {
+	       type = "group",
+	       name = "Look & Feel",
+	       args = {
+		  background= {
+		     type = 'select',
+		     dialogControl = 'LSM30_Background',
+		     name = 'Background texture',
+		     desc = 'The background texture used for the bin.',
+		     order = 20,
+		     values = {} --AceGUIWidgetLSMlists.background,
+		  },
+		  border = {
+		     type = 'select',
+		     dialogControl = 'LSM30_Border',
+		     name = 'Border texture',
+		     desc = 'The border texture used for the bin.',
+		     order = 40,
+		     values = {} --AceGUIWidgetLSMlists.border,
+		  },
+		  backgroundColor = {
+		     type = "color",
+		     name = "Background color",
+		     hasAlpha = true,
+		     set = "SetColorOpt",
+		     get = "GetColorOpt",
+		     order = 30,
+		  },
+		  borderColor = {
+		     type = "color",
+		     name = "Border color",
+		     hasAlpha = true,
+		     set = "SetColorOpt",
+		     get = "GetColorOpt",
+		     order = 50,
+		  },
+		  edgeSize = {
+		     type = "range",
+		     name = "Edge size",
+		     desc = "Width of the border.",
+		     min = 1, max = 50, step = 0.1,
+		  },
+		  font = {
+		     type = 'select',
+		     dialogControl = 'LSM30_Font',
+		     name = 'Font',
+		     desc = 'Font used on the bars',
+		     values =  {}, --AceGUIWidgetLSMlists.font,
+		     order = 1,
+		  },
+		  fontsize = {
+		     order = 1,
+		     type = "range",
+		     name = "Font size",
+		     min = 1, max = 30, step = 1,
+		     order = 2
+		  },
+	       },
+	    },
+	    orientation = {
+	       type = "group",
+	       name = "Orientation",
+	       args = {
+		  flipx = {
+		     type = "toggle",
+		     name = "Flip x-axis",
+		     desc = "If toggled, the buttons will expand to the left instead of to the right.",
+		     order = 90,
+		  },
+		  flipy = {
+		     type = "toggle",
+		     name = "Flip y-axis",
+		     desc = "If toggled, the buttons will expand upwards instead of downwards.",
+		     order = 100,
+		  },
+		  flipicons = {
+		     type = "toggle",
+		     name = "Icons on the right",
+		     desc = "If checked, icons will be placed to the right of the label.",
+		     order = 110,
+		  },
+		  center = {
+		     type = "toggle",
+		     name = "Center alignment",
+		     desc = "All rows will be center aligned in the bin.",
+		     order = 120,
+		  }
+	       }
+	    },
+	    spacing = {
+	       type = "group",
+	       name = "Sizing",
+	       args = {
+		  useGlobal = {
+		     type = "toggle",
+		     name = "Use global settings",
+		     desc = "Use global settings for scale, button size and padding.",
+		     order = 1,
+		  },
+		  resetFromGlobal = {
+		     type = "execute",
+		     name = "Copy global settings",
+		     desc = "Copy parameters from the global Button Bin settings. This will override the bin specific settings.",
+		     func = "CopyGlobalSettings",
+		     disabled = "UsingGlobalScale",
+		     order = 2,
+		  },
+		  hpadding = {
+		     type = "range",
+		     name = "Horizontal padding",
+		     desc = "Horizontal space between each datablock.",
+		     width = "full",
+		     hidden = "UsingGlobalScale",
+		     min = 0, max = 50, step = 0.1,
+		     order = 130,
+		  },
+		  vpadding = {
+		     type = "range",
+		     hidden = "UsingGlobalScale",
+		     name = "Vertical padding",
+		     desc = "Space between datablock rows.",
+		     width = "full",
+		     min = 0, max = 50, step = 0.1,
+		     order = 140,
+		  },
+		  size = {
+		     type = "range",
+		     name = "Icon size",
+		     hidden = "UsingGlobalScale",
+		     desc = "Icon size in pixels.",
+		     width = "full",
+		     min = 5, max = 50, step = 1,
+		     order = 160,
+		  },
+		  scale = {
+		     type = "range",
+		     hidden = "UsingGlobalScale",
+		     name = "Bin scale",
+		     desc = "Relative scale of the bin and all contents.",
+		     width = "full",
+		     min = 0.01, max = 5, step = 0.01,
+		     order = 170,
+		  },
+		  width = {
+		     type = "range",
+		     name = "Max blocks per row",
+		     desc = "Maximum number of blocks to place per row. Note that regardless of this setting, you will never get a bin wider than the absolute width specified.",
+		     width = "full",
+		     min = 1, max = 200, step = 1,
+		     order = 180,
+		  },
+		  pixelwidth = {
+		     type = "range",
+		     name = "Bin width",
+		     desc = "Width of the bin. If zero, the width is dynamically determined by the max blocks setting. If non-zero the row will wrap to avoid going beyond this width. Note that at minimum of one block always be placed on each row so for very small values, the bin might be wider than this setting.",
+		     width = "full",
+		     min = 0, max = 4000, step = 1,
+		     order = 180,
+		  },
+		  tooltipScale = {
+		     type = "range",
+		     name = "Tooltip Scale",
+		     desc = "The scale of the tooltips for the datablocks in this bin.",
+		     width="full",
+		     min = 0.1, max = 5, step = 0.05,
+		     disabled = "UsingGlobalScale",
+		     order = 190,
+		  },
+	       }
+	    }
+	 }
+      },
+      objconfig = {
+	 name = "Data Object Configuration",
+	 type = "group",
+	 args = {
+	    help = {
+	       type = "description",
+	       name = "There are currently no bins configured. Please add a bin before configuring the data blocks.\n\n",
+	       order = 0,
+	       hidden = function() return bins[1] end,
+	    },
+	 }
+      },
+      cmdline = {
+	 name = "Command Line",
+	 type = "group",
+	 args = {
+	    config = {
+	       type = "execute",
+	       name = "Show configuration dialog",
+	       func = function() mod:ToggleConfigDialog() end,
+	       dialogHidden = true
+	    },
+	    toggle = {
+	       type = "execute",
+	       name = "Toggle the frame lock",
+	       func = function() mod:ToggleLocked() end,
+	       dialogHidden = true
+	    },
+	 }
+      }
+   }
+   topLevelOptions =  {
+      type = "group",
+      name = "Button Bin Settings",
+      childGroups = "tab", 
+      args = {
+	 global = options.global,
+	 bins = options.bins,
+	 objs = options.objconfig,
+      }
+      
+   }
+end
